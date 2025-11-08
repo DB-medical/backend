@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,11 +30,9 @@ public class Pharmacist {
     @Column(name = "phid")
     private Long id;
 
-    @Column(name = "name", length = 50, nullable = false)
-    private String name;
-
-    @Column(name = "password", length = 255, nullable = false)
-    private String password;
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "member_id", nullable = false, unique = true)
+    private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pharm_id")
