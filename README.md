@@ -68,7 +68,6 @@ Spring Boot 기반 의료 정보 시스템의 백엔드 모듈로, 병원·약�
 - JWT 인증이 필요한 API는 Swagger 우측 상단 Authorize 버튼을 눌러 `Bearer <token>` 값을 입력하면 됩니다.
 - 예시 요청
   ```json
-  // 회원 가입 (POST /signup)
   {
     "role": "DOCTOR",
     "email": "doctor.jsh@example.com",
@@ -82,7 +81,6 @@ Spring Boot 기반 의료 정보 시스템의 백엔드 모듈로, 병원·약�
   }
   ```
   ```json
-  // 로그인 (POST /login)
   {
     "email": "doctor.jah@example.com",
     "password": "password",
@@ -113,6 +111,45 @@ Spring Boot 기반 의료 정보 시스템의 백엔드 모듈로, 병원·약�
 - `/login`, `/signup` 요청은 시큐리티 필터에서 제외되며, 그 외 요청은 `Authorization: Bearer <token>` 헤더를 통해 인증해야 합니다.
 - JWT 관련 설정은 `application.yaml`의 `jwt.secret`, `jwt.expiration-millis`로 관리하며 환경 변수(`JWT_SECRET`, `JWT_EXPIRATION`)로
   오버라이드할 수 있습니다.
+
+## 진료 기록 API
+
+- `POST /medical-records`: 의사 전용 API로 환자 정보, 증상/치료, 선택적 처방전을 입력해 진료기록을 생성하며 의약품을 선택하면 등록된 성분 정보가 응답에 자동 포함됩니다.
+- `GET /medical-records`: 최근 방문일 순으로 전체 진료기록을 조회합니다.
+- `GET /medical-records/{recordId}`: 단건 진료기록과 증상·치료·처방 상세를 반환합니다.
+- `GET /medical-records/patient/{patientId}`: 특정 환자의 모든 진료기록을 조회합니다.
+- `GET /medical-records/patients/{ssn}`: 주민등록번호로 기존 환자 정보를 불러와 입력 화면에 활용할 수 있습니다.
+- 위 API는 모두 DOCTOR 역할만 접근 가능하며 Swagger 문서에서 요청/응답 스키마를 확인할 수 있습니다.
+
+### 사용 예시
+
+1. 환자 검색
+   ```bash
+   curl -H "Authorization: Bearer <TOKEN>" \
+        http://localhost:8080/medical-records/patients/980101-2345678
+   ```
+   주민번호가 일치하면 이름·주소·연락처가 내려와 작성 화면을 자동 채울 수 있습니다.
+
+2. 진료 기록 작성
+   ```bash
+   curl -X POST http://localhost:8080/medical-records \
+        -H "Authorization: Bearer <TOKEN>" \
+        -H "Content-Type: application/json" \
+        -d '{
+              "visitDate": "2024-08-01",
+              "diagnosis": "상기도 감염 의심",
+              "patient": { "ssn": "980101-2345678", "name": "김하늘" },
+              "symptoms": [{ "id": 1 }, { "name": "콧물", "bodyPart": "호흡기" }],
+              "treatments": [{ "name": "수액 요법" }],
+              "prescription": {
+                "pharmacyId": 1,
+                "medicines": [
+                  { "medicineId": 1, "dosage": "1정", "frequency": "하루 2회", "days": 7 }
+                ]
+              }
+            }'
+   ```
+   응답에는 저장된 의약품의 성분 목록이 자동 포함됩니다.
 
 ## 라이선스
 
