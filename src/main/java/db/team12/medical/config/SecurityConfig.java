@@ -36,6 +36,8 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers(SWAGGER_WHITELIST)
                                 .permitAll()
+                                .requestMatchers("/medical-records/**")
+                                .hasRole("DOCTOR")
                         .anyRequest()
                         .authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

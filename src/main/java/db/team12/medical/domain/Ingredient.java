@@ -5,7 +5,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -28,4 +31,8 @@ public class Ingredient {
 
     @Column(name = "iname", length = 100)
     private String name;
+
+    @Builder.Default
+    @ManyToMany(mappedBy = "ingredients")
+    private Set<Medicine> medicines = new HashSet<>();
 }
