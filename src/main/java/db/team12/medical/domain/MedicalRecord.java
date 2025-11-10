@@ -60,4 +60,12 @@ public class MedicalRecord {
             joinColumns = @JoinColumn(name = "rid"),
             inverseJoinColumns = @JoinColumn(name = "sid"))
     private Set<Symptom> symptoms = new HashSet<>();
+
+    @Builder.Default
+    @ManyToMany
+    @JoinTable(
+            name = "record_treatment",
+            joinColumns = @JoinColumn(name = "rid"),
+            inverseJoinColumns = @JoinColumn(name = "tid"))
+    private Set<Treatment> treatments = new HashSet<>();
 }
