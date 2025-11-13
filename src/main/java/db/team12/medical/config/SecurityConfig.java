@@ -38,6 +38,10 @@ public class SecurityConfig {
                                 .permitAll()
                                 .requestMatchers("/medical-records/**")
                                 .hasRole("DOCTOR")
+                                .requestMatchers("/pharmacies/**")
+                                .hasRole("DOCTOR")
+                                .requestMatchers("/prescriptions/**")
+                                .hasAnyRole("PHARMACIST", "DOCTOR")
                         .anyRequest()
                         .authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
