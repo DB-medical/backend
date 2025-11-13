@@ -121,6 +121,15 @@ Spring Boot 기반 의료 정보 시스템의 백엔드 모듈로, 병원·약�
 - `GET /medical-records/patients/{ssn}`: 주민등록번호로 기존 환자 정보를 불러와 입력 화면에 활용할 수 있습니다.
 - 위 API는 모두 DOCTOR 역할만 접근 가능하며 Swagger 문서에서 요청/응답 스키마를 확인할 수 있습니다.
 
+## 처방전 · 약국 API
+
+- `GET /pharmacies?keyword=왕십리&size=5`: 의사가 약국명/주소 키워드로 검색해 전송 대상 약국을 고를 수 있습니다.
+- `GET /prescriptions`: DOCTOR는 본인이 작성한 처방전 목록을, PHARMACIST는 본인 약국으로 전송된 처방전 목록을 조회합니다.
+- `GET /prescriptions/{prescriptionId}`: DOCTOR·PHARMACIST가 각자의 권한 범위 내에서 처방 상세를 확인합니다.
+- `POST /prescriptions/{prescriptionId}/dispatch`: 의사가 특정 처방전을 선택한 약국으로 전송하며 상태를 `RECEIVED`로 초기화합니다.
+- `PATCH /prescriptions/{prescriptionId}/status`: 약사가 조제 상태를 `RECEIVED → DISPENSING → COMPLETED` 순서로 갱신합니다.
+- 상태 전환 규칙을 위반하거나 타 약국/타 의사의 처방전에 접근한 경우 `400` 예외가 반환됩니다.
+
 ### 사용 예시
 
 1. 환자 검색
@@ -150,6 +159,20 @@ Spring Boot 기반 의료 정보 시스템의 백엔드 모듈로, 병원·약�
             }'
    ```
    응답에는 저장된 의약품의 성분 목록이 자동 포함됩니다.
+
+3. 처방전 전송 및 조제 상태 갱신
+   ```bash
+   curl -X POST http://localhost:8080/prescriptions/5/dispatch \
+        -H "Authorization: Bearer <DOCTOR_TOKEN>" \
+        -H "Content-Type: application/json" \
+        -d '{ "pharmacyId": 3 }'
+
+   curl -X PATCH http://localhost:8080/prescriptions/5/status \
+        -H "Authorization: Bearer <PHARMACIST_TOKEN>" \
+        -H "Content-Type: application/json" \
+        -d '{ "status": "DISPENSING" }'
+   ```
+   약사는 `DISPENSING` → `COMPLETED` 순서로만 상태를 업데이트할 수 있으며, 타 약국 처방전에는 접근할 수 없습니다.
 
 ## 라이선스
 
