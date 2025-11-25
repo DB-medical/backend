@@ -6,8 +6,7 @@ Spring Boot 기반 의료 정보 시스템의 백엔드 모듈로, 병원·약�
 
 - Java 21, Spring Boot 3.5 (Web, Data JPA, Security)
 - Gradle 8 래퍼
-- MySQL 드라이버, Jakarta Persistence, Lombok
-- Docker Compose(`compose.yaml`)를 통한 개발용 인프라 구성
+- MySQL 8.x, Spring Data JPA, Lombok
 
 ## 프로젝트 구조
 
@@ -23,7 +22,6 @@ Spring Boot 기반 의료 정보 시스템의 백엔드 모듈로, 병원·약�
 │       └── MedicalApplicationTests.java
 ├── docs                      # 추가 문서
 ├── AGENTS.md                 # 기여 및 커뮤니케이션 지침
-├── compose.yaml              # 로컬 인프라 설정
 └── README.md
 ```
 
@@ -36,31 +34,30 @@ Spring Boot 기반 의료 정보 시스템의 백엔드 모듈로, 병원·약�
 
 ## 시작하기
 
-1. 필수 도구: JDK 21, Docker(선택), Gradle 래퍼 사용.
+1. 필수 도구: JDK 21, MySQL 8.x, Gradle 래퍼 사용.
 2. 의존성 설치 및 빌드
    ```
    ./gradlew clean build
    ```
-3. 로컬 실행
+3. 로컬 실행 (기본 프로필)
+   - MySQL에 `medical` 데이터베이스를 만들고 계정 `medical`/`medical123!`(또는 환경 변수 `SPRING_DATASOURCE_*`)을 준비합니다.
+   - 기본 연결 정보: `jdbc:mysql://localhost:3307/medical` (필요 시 `SPRING_DATASOURCE_URL`로 오버라이드)
    ```
    ./gradlew bootRun
    ```
-   필요 시 `compose.yaml`을 참고해 데이터베이스 컨테이너를 띄웁니다.
 
-## Docker / Compose 실행
+4. **프로필**
+   ```
+   SPRING_PROFILES_ACTIVE=<프로필> ./gradlew bootRun
+   ```
+   또는 IDE Run Configuration에서 `SPRING_PROFILES_ACTIVE=<프로필>`/`--spring.profiles.active=<프로필>`을 지정합니다.
 
-1. `.env` 없이도 `compose.yaml`에 기본 환경 변수가 정의되어 있으므로 바로 실행 가능합니다.
-   ```
-   docker compose up --build
-   ```
-2. 컨테이너 구성
-    - `mysql`: `medical` 데이터베이스를 생성하고 루트/일반 계정 비밀번호는 `compose.yaml`의 `MYSQL_*` 항목으로 정의되어 있습니다.
-    - `backend`: 위 저장소의 Dockerfile로 빌드된 Spring Boot 애플리케이션. `SPRING_DATASOURCE_*`, `JWT_*` 환경 변수를 통해 DB 및 JWT 설정을 주입합니다.
-3. 포트
-    - MySQL: `3306` (호스트에 바인딩)
-    - Backend: `8080` → `http://localhost:8080/swagger-ui/index.html`에서 Swagger UI 접근
-4. 데이터 초기화
-    - 애플리케이션 기동 시 `data.sql`이 실행되어 최소 10건 이상의 한글 더미 데이터가 로드됩니다.
+   - (기본) 프로필 없음: 위 MySQL 설정을 그대로 사용합니다.
+   - `local`: 내장 H2 데이터베이스를 사용하며 `data.sql`이 자동 적재됩니다. 콘솔 주소는 `http://localhost:8080/h2-console`입니다.
+
+### 데이터 초기화
+
+- 애플리케이션 기동 시 `data.sql`이 실행되어 최소 10건 이상의 한글 더미 데이터가 로드됩니다.
 
 ## Swagger 기반 API 문서
 
@@ -121,6 +118,15 @@ Spring Boot 기반 의료 정보 시스템의 백엔드 모듈로, 병원·약�
 - `GET /medical-records/patients/{ssn}`: 주민등록번호로 기존 환자 정보를 불러와 입력 화면에 활용할 수 있습니다.
 - 위 API는 모두 DOCTOR 역할만 접근 가능하며 Swagger 문서에서 요청/응답 스키마를 확인할 수 있습니다.
 
+## 처방전 · 약국 API
+
+- `GET /pharmacies?keyword=왕십리&size=5`: 의사가 약국명/주소 키워드로 검색해 전송 대상 약국을 고를 수 있습니다.
+- `GET /prescriptions`: DOCTOR는 본인이 작성한 처방전 목록을, PHARMACIST는 본인 약국으로 전송된 처방전 목록을 조회합니다.
+- `GET /prescriptions/{prescriptionId}`: DOCTOR·PHARMACIST가 각자의 권한 범위 내에서 처방 상세를 확인합니다.
+- `POST /prescriptions/{prescriptionId}/dispatch`: 의사가 특정 처방전을 선택한 약국으로 전송하며 상태를 `RECEIVED`로 초기화합니다.
+- `PATCH /prescriptions/{prescriptionId}/status`: 약사가 조제 상태를 `RECEIVED → DISPENSING → COMPLETED` 순서로 갱신합니다.
+- 상태 전환 규칙을 위반하거나 타 약국/타 의사의 처방전에 접근한 경우 `400` 예외가 반환됩니다.
+
 ### 사용 예시
 
 1. 환자 검색
@@ -150,6 +156,20 @@ Spring Boot 기반 의료 정보 시스템의 백엔드 모듈로, 병원·약�
             }'
    ```
    응답에는 저장된 의약품의 성분 목록이 자동 포함됩니다.
+
+3. 처방전 전송 및 조제 상태 갱신
+   ```bash
+   curl -X POST http://localhost:8080/prescriptions/5/dispatch \
+        -H "Authorization: Bearer <DOCTOR_TOKEN>" \
+        -H "Content-Type: application/json" \
+        -d '{ "pharmacyId": 3 }'
+
+   curl -X PATCH http://localhost:8080/prescriptions/5/status \
+        -H "Authorization: Bearer <PHARMACIST_TOKEN>" \
+        -H "Content-Type: application/json" \
+        -d '{ "status": "DISPENSING" }'
+   ```
+   약사는 `DISPENSING` → `COMPLETED` 순서로만 상태를 업데이트할 수 있으며, 타 약국 처방전에는 접근할 수 없습니다.
 
 ## 라이선스
 

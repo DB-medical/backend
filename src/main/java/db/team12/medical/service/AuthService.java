@@ -73,8 +73,28 @@ public class AuthService {
             throw new IllegalArgumentException("요청한 역할과 계정 역할이 일치하지 않습니다.");
         }
 
+        LoginResponse.DoctorProfile doctorProfile = null;
+        if (role == MemberRole.DOCTOR) {
+            Doctor doctor = member.getDoctorProfile();
+            if (doctor == null) {
+                throw new IllegalStateException("의사 프로필이 등록되지 않은 계정입니다.");
+            }
+            doctorProfile = LoginResponse.DoctorProfile.builder()
+                    .doctorId(doctor.getId())
+                    .hospitalId(doctor.getHospital() != null ? doctor.getHospital().getId() : null)
+                    .hospitalName(doctor.getHospital() != null ? doctor.getHospital().getName() : null)
+                    .departmentId(doctor.getDepartment() != null ? doctor.getDepartment().getId() : null)
+                    .departmentName(doctor.getDepartment() != null ? doctor.getDepartment().getName() : null)
+                    .build();
+        }
+
         String token = jwtTokenProvider.generateToken(member);
-        return LoginResponse.builder().accessToken(token).role(role).build();
+        return LoginResponse.builder()
+                .accessToken(token)
+                .role(role)
+                .name(member.getName())
+                .doctorProfile(doctorProfile)
+                .build();
     }
 
     private void validateSignupRequest(MemberSignupRequest request) {

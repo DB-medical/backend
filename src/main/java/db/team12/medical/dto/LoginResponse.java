@@ -12,4 +12,18 @@ public class LoginResponse {
 
     private final String accessToken;
     private final MemberRole role;
+    private final String name;
+    private final DoctorProfile doctorProfile;
+
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    public static class DoctorProfile {
+
+        private final Long doctorId;
+        private final Long hospitalId;
+        private final String hospitalName;
+        private final Long departmentId;
+        private final String departmentName;
+    }
 }

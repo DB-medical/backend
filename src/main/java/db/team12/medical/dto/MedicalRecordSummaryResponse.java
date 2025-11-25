@@ -25,7 +25,7 @@ public class MedicalRecordSummaryResponse {
     private final PersonSummary patient;
 
     @Schema(description = "담당 의사 정보")
-    private final PersonSummary doctor;
+    private final DoctorSummary doctor;
 
     @Getter
     @Builder
@@ -38,5 +38,30 @@ public class MedicalRecordSummaryResponse {
 
         @Schema(description = "이름", example = "김하늘")
         private final String name;
+
+        @Schema(description = "주민번호", example = "900101-1234567")
+        private final String ssn;
+
+        @Schema(description = "연락처", example = "010-1234-5678")
+        private final String phone;
+    }
+
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    @Schema(description = "의사 요약 정보")
+    public static class DoctorSummary {
+
+        @Schema(description = "의사 ID", example = "9")
+        private final Long id;
+
+        @Schema(description = "의사명", example = "김하늘")
+        private final String name;
+
+        @Schema(description = "소속 병원명", example = "서울 의료원")
+        private final String hospitalName;
+
+        @Schema(description = "소속 진료과 명", example = "내과", nullable = true)
+        private final String departmentName;
     }
 }

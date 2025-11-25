@@ -84,6 +84,19 @@ public class MedicalRecordService {
     }
 
     @Transactional(readOnly = true)
+    public List<PatientResponse> searchPatientsByName(MemberPrincipal principal, String name) {
+        getDoctor(principal);
+        if (name == null || name.isBlank()) {
+            return List.of();
+        }
+        return patientRepository
+                .findTop20ByNameContainingIgnoreCaseOrderByNameAsc(name.trim())
+                .stream()
+                .map(this::toPatientResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<MedicalRecordSummaryResponse> getAllRecords(MemberPrincipal principal) {
         getDoctor(principal); // 목록 조회 역시 의사만 허용
         return medicalRecordRepository.findAllByOrderByVisitDateDesc().stream()
@@ -211,8 +224,14 @@ public class MedicalRecordService {
         }
 
         LocalDate issueDate = payload.getIssueDate() != null ? payload.getIssueDate() : record.getVisitDate();
-        PrescriptionStatus status =
-                payload.getStatus() != null ? payload.getStatus() : PrescriptionStatus.RECEIVED;
+        PrescriptionStatus status;
+        if (payload.getStatus() != null) {
+            status = payload.getStatus();
+        } else if (payload.getPharmacyId() != null) {
+            status = PrescriptionStatus.RECEIVED;
+        } else {
+            status = PrescriptionStatus.CREATED;
+        }
         Pharmacy pharmacy = payload.getPharmacyId() == null
                 ? null
                 : pharmacyRepository
@@ -267,8 +286,8 @@ public class MedicalRecordService {
                 .recordId(record.getId())
                 .visitDate(record.getVisitDate())
                 .diagnosis(record.getDiagnosis())
-                .patient(toPersonSummary(record.getPatient().getId(), record.getPatient().getName()))
-                .doctor(toPersonSummary(record.getDoctor().getId(), record.getDoctor().getMember().getName()))
+                .patient(toPatientSummary(record.getPatient()))
+                .doctor(toDoctorSummary(record.getDoctor()))
                 .build();
     }
 
@@ -294,8 +313,7 @@ public class MedicalRecordService {
                 .visitDate(record.getVisitDate())
                 .diagnosis(record.getDiagnosis())
                 .patient(toPatientResponse(record.getPatient()))
-                .doctor(toPersonSummary(
-                        record.getDoctor().getId(), record.getDoctor().getMember().getName()))
+                .doctor(toDoctorSummary(record.getDoctor()))
                 .symptoms(symptoms)
                 .treatments(treatments)
                 .prescription(toPrescriptionResponse(record.getPrescription()))
@@ -348,7 +366,22 @@ public class MedicalRecordService {
                 .build();
     }
 
-    private MedicalRecordSummaryResponse.PersonSummary toPersonSummary(Long id, String name) {
-        return MedicalRecordSummaryResponse.PersonSummary.builder().id(id).name(name).build();
+    private MedicalRecordSummaryResponse.PersonSummary toPatientSummary(Patient patient) {
+        return MedicalRecordSummaryResponse.PersonSummary.builder()
+                .id(patient.getId())
+                .name(patient.getName())
+                .ssn(patient.getSsn())
+                .phone(patient.getPhone())
+                .build();
+    }
+
+    private MedicalRecordSummaryResponse.DoctorSummary toDoctorSummary(Doctor doctor) {
+        return MedicalRecordSummaryResponse.DoctorSummary.builder()
+                .id(doctor.getId())
+                .name(doctor.getMember().getName())
+                .hospitalName(doctor.getHospital() != null ? doctor.getHospital().getName() : null)
+                .departmentName(
+                        doctor.getDepartment() != null ? doctor.getDepartment().getName() : null)
+                .build();
     }
 }

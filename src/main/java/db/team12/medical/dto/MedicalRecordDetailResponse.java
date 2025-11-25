@@ -27,7 +27,7 @@ public class MedicalRecordDetailResponse {
     private final PatientResponse patient;
 
     @Schema(description = "담당 의사 정보")
-    private final MedicalRecordSummaryResponse.PersonSummary doctor;
+    private final MedicalRecordSummaryResponse.DoctorSummary doctor;
 
     @Schema(description = "증상 목록")
     private final List<SymptomResponse> symptoms;
