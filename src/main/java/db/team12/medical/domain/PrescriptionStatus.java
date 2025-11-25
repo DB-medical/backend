@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum PrescriptionStatus {
+    CREATED("전송 대기"),
     RECEIVED("접수"),
     DISPENSING("조제 중"),
     COMPLETED("조제 완료");

@@ -89,6 +89,14 @@ public class PrescriptionService {
         Pharmacy pharmacy = pharmacyRepository
                 .findById(request.getPharmacyId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 약국입니다."));
+        if (prescription.getStatus() != PrescriptionStatus.CREATED || prescription.getPharmacy() != null) {
+            throw new IllegalArgumentException("이미 약국으로 전송된 처방전입니다.");
+        }
+        if (pharmacy.getHospital() == null
+                || doctor.getHospital() == null
+                || !pharmacy.getHospital().getId().equals(doctor.getHospital().getId())) {
+            throw new IllegalArgumentException("자신의 병원과 연결된 약국만 선택할 수 있습니다.");
+        }
 
         prescription.setPharmacy(pharmacy);
         prescription.setStatus(PrescriptionStatus.RECEIVED);
@@ -137,13 +145,8 @@ public class PrescriptionService {
         if (current == target) {
             return;
         }
-        if (current == null) {
-            if (target != PrescriptionStatus.RECEIVED) {
-                throw new IllegalArgumentException("처방전은 RECEIVED 상태에서 시작해야 합니다.");
-            }
-            return;
-        }
         switch (current) {
+            case CREATED -> throw new IllegalArgumentException("약국으로 전송되지 않은 처방전은 약사가 변경할 수 없습니다.");
             case RECEIVED -> {
                 if (target != PrescriptionStatus.DISPENSING) {
                     throw new IllegalArgumentException("RECEIVED 상태에서는 DISPENSING 으로만 변경할 수 있습니다.");
@@ -167,7 +170,7 @@ public class PrescriptionService {
                 .status(prescription.getStatus())
                 .diagnosis(record.getDiagnosis())
                 .patient(toPersonSummary(record.getPatient()))
-                .doctor(toPersonSummary(record.getDoctor()))
+                .doctor(toDoctorSummary(record.getDoctor()))
                 .build();
     }
 
@@ -178,10 +181,12 @@ public class PrescriptionService {
                 .build();
     }
 
-    private PrescriptionSummaryResponse.PersonSummary toPersonSummary(Doctor doctor) {
-        return PrescriptionSummaryResponse.PersonSummary.builder()
+    private PrescriptionSummaryResponse.DoctorSummary toDoctorSummary(Doctor doctor) {
+        return PrescriptionSummaryResponse.DoctorSummary.builder()
                 .id(doctor.getId())
                 .name(doctor.getMember().getName())
+                .hospitalName(doctor.getHospital() != null ? doctor.getHospital().getName() : null)
+                .departmentName(doctor.getDepartment() != null ? doctor.getDepartment().getName() : null)
                 .build();
     }
 
@@ -202,9 +207,15 @@ public class PrescriptionService {
                 .pharmacyId(pharmacy != null ? pharmacy.getId() : null)
                 .pharmacyName(pharmacy != null ? pharmacy.getName() : null)
                 .patient(toPatientResponse(record.getPatient()))
-                .doctor(MedicalRecordSummaryResponse.PersonSummary.builder()
+                .doctor(MedicalRecordSummaryResponse.DoctorSummary.builder()
                         .id(record.getDoctor().getId())
                         .name(record.getDoctor().getMember().getName())
+                        .hospitalName(record.getDoctor().getHospital() != null
+                                ? record.getDoctor().getHospital().getName()
+                                : null)
+                        .departmentName(record.getDoctor().getDepartment() != null
+                                ? record.getDoctor().getDepartment().getName()
+                                : null)
                         .build())
                 .medicines(medicines)
                 .build();

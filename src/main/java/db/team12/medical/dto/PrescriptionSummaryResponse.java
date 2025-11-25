@@ -32,7 +32,7 @@ public class PrescriptionSummaryResponse {
     private final PersonSummary patient;
 
     @Schema(description = "처방 의사 정보")
-    private final PersonSummary doctor;
+    private final DoctorSummary doctor;
 
     @Getter
     @Builder
@@ -45,5 +45,24 @@ public class PrescriptionSummaryResponse {
 
         @Schema(description = "이름", example = "김하늘")
         private final String name;
+    }
+
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    @Schema(description = "의사 요약 정보")
+    public static class DoctorSummary {
+
+        @Schema(description = "ID", example = "3")
+        private final Long id;
+
+        @Schema(description = "이름", example = "이정민")
+        private final String name;
+
+        @Schema(description = "소속 병원명", example = "서울 의료원", nullable = true)
+        private final String hospitalName;
+
+        @Schema(description = "소속 진료과명", example = "소아과", nullable = true)
+        private final String departmentName;
     }
 }

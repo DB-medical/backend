@@ -22,4 +22,10 @@ public class PharmacySearchResponse {
 
     @Schema(description = "연락처", example = "02-123-4567")
     private final String phone;
+
+    @Schema(description = "연계된 병원 ID", example = "1")
+    private final Long hospitalId;
+
+    @Schema(description = "연계된 병원명", example = "서울의료원")
+    private final String hospitalName;
 }

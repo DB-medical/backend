@@ -72,8 +72,12 @@ class MedicalRecordServiceTest {
                 Doctor.builder().member(member).hospital(hospital).department(department).build());
         member.setDoctorProfile(doctor);
 
-        Pharmacy pharmacy = pharmacyRepository.save(
-                Pharmacy.builder().name("테스트약국").address("서울특별시 종로구").phone("02-1111-1111").build());
+        Pharmacy pharmacy = pharmacyRepository.save(Pharmacy.builder()
+                .name("테스트약국")
+                .address("서울특별시 종로구")
+                .phone("02-1111-1111")
+                .hospital(hospital)
+                .build());
         pharmacyId = pharmacy.getId();
 
         doctorPrincipal = new MemberPrincipal(member);

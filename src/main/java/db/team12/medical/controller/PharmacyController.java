@@ -37,6 +37,6 @@ public class PharmacyController {
             @AuthenticationPrincipal MemberPrincipal principal,
             @RequestParam String keyword,
             @RequestParam(required = false, defaultValue = "10") Integer size) {
-        return ResponseEntity.ok(pharmacyService.search(keyword, size));
+        return ResponseEntity.ok(pharmacyService.search(principal, keyword, size));
     }
 }

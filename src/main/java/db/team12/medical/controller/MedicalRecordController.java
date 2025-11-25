@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -99,5 +100,18 @@ public class MedicalRecordController {
     public ResponseEntity<PatientResponse> getPatientBySsn(
             @AuthenticationPrincipal MemberPrincipal principal, @PathVariable String ssn) {
         return ResponseEntity.ok(medicalRecordService.getPatientBySsn(principal, ssn));
+    }
+
+    @GetMapping("/patients")
+    @Operation(summary = "환자 이름 검색", description = "이름 키워드로 환자 목록을 검색합니다.")
+    @ApiResponse(
+            responseCode = "200",
+            description = "조회 성공",
+            content = @Content(
+                    array = @ArraySchema(schema = @Schema(implementation = PatientResponse.class))))
+    public ResponseEntity<List<PatientResponse>> searchPatientsByName(
+            @AuthenticationPrincipal MemberPrincipal principal,
+            @RequestParam(name = "name", required = false, defaultValue = "") String name) {
+        return ResponseEntity.ok(medicalRecordService.searchPatientsByName(principal, name));
     }
 }

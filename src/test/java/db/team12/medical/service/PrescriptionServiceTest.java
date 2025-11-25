@@ -79,11 +79,19 @@ class PrescriptionServiceTest {
         doctorPrincipal = registerDoctor("doctor-pres@test.com", "처방의", hospital, department);
         otherDoctorPrincipal = registerDoctor("doctor2@test.com", "다른의", hospital, department);
 
-        Pharmacy primaryPharmacy = pharmacyRepository.save(
-                Pharmacy.builder().name("연계약국").address("서울시 강남구").phone("02-3000-4000").build());
+        Pharmacy primaryPharmacy = pharmacyRepository.save(Pharmacy.builder()
+                .name("연계약국")
+                .address("서울시 강남구")
+                .phone("02-3000-4000")
+                .hospital(hospital)
+                .build());
         pharmacyId = primaryPharmacy.getId();
-        Pharmacy secondaryPharmacy = pharmacyRepository.save(
-                Pharmacy.builder().name("다른약국").address("서울시 서초구").phone("02-5000-6000").build());
+        Pharmacy secondaryPharmacy = pharmacyRepository.save(Pharmacy.builder()
+                .name("다른약국")
+                .address("서울시 서초구")
+                .phone("02-5000-6000")
+                .hospital(hospital)
+                .build());
         otherPharmacyId = secondaryPharmacy.getId();
 
         pharmacistPrincipal = registerPharmacist("pharmacist@test.com", "조제약사", primaryPharmacy);
@@ -207,7 +215,7 @@ class PrescriptionServiceTest {
                 PrescriptionDispatchRequest.builder().pharmacyId(pharmacyId).build());
 
         assertThat(dispatched.getPharmacyId()).isEqualTo(pharmacyId);
-        assertThat(dispatched.getStatus()).isNotNull();
+        assertThat(dispatched.getStatus()).isEqualTo(PrescriptionStatus.RECEIVED);
     }
 
     @Test
@@ -250,6 +258,29 @@ class PrescriptionServiceTest {
                         PrescriptionDispatchRequest.builder().pharmacyId(9999L).build()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("존재하지 않는 약국");
+    }
+
+    @Test
+    @DisplayName("약국 미지정 처방전은 CREATED 상태에서 시작한다")
+    void createPrescription_defaultsToCreated() {
+        MedicalRecordDetailResponse created =
+                medicalRecordService.createRecord(doctorPrincipal, request("미전송", "911212-1234567", null, "감기약"));
+
+        assertThat(created.getPrescription().getStatus()).isEqualTo(PrescriptionStatus.CREATED);
+    }
+
+    @Test
+    @DisplayName("이미 전송된 처방전은 다시 전송할 수 없다")
+    void dispatchPrescription_onlyFromCreated() {
+        MedicalRecordDetailResponse created =
+                medicalRecordService.createRecord(doctorPrincipal, request("이미전송", "920202-7777777", pharmacyId, "해열제"));
+
+        assertThatThrownBy(() -> prescriptionService.dispatchPrescription(
+                        doctorPrincipal,
+                        created.getPrescription().getId(),
+                        PrescriptionDispatchRequest.builder().pharmacyId(pharmacyId).build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("이미 약국으로 전송된 처방전");
     }
 
     @Test

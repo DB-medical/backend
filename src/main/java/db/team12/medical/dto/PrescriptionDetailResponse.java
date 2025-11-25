@@ -40,7 +40,7 @@ public class PrescriptionDetailResponse {
     private final PatientResponse patient;
 
     @Schema(description = "처방 의사 정보")
-    private final MedicalRecordSummaryResponse.PersonSummary doctor;
+    private final MedicalRecordSummaryResponse.DoctorSummary doctor;
 
     @Schema(description = "처방 약 목록")
     private final List<PrescribedMedicineResponse> medicines;

@@ -6,8 +6,7 @@ Spring Boot 기반 의료 정보 시스템의 백엔드 모듈로, 병원·약�
 
 - Java 21, Spring Boot 3.5 (Web, Data JPA, Security)
 - Gradle 8 래퍼
-- MySQL 드라이버, Jakarta Persistence, Lombok
-- Docker Compose(`compose.yaml`)를 통한 개발용 인프라 구성
+- MySQL 8.x, Spring Data JPA, Lombok
 
 ## 프로젝트 구조
 
@@ -23,7 +22,6 @@ Spring Boot 기반 의료 정보 시스템의 백엔드 모듈로, 병원·약�
 │       └── MedicalApplicationTests.java
 ├── docs                      # 추가 문서
 ├── AGENTS.md                 # 기여 및 커뮤니케이션 지침
-├── compose.yaml              # 로컬 인프라 설정
 └── README.md
 ```
 
@@ -36,31 +34,30 @@ Spring Boot 기반 의료 정보 시스템의 백엔드 모듈로, 병원·약�
 
 ## 시작하기
 
-1. 필수 도구: JDK 21, Docker(선택), Gradle 래퍼 사용.
+1. 필수 도구: JDK 21, MySQL 8.x, Gradle 래퍼 사용.
 2. 의존성 설치 및 빌드
    ```
    ./gradlew clean build
    ```
-3. 로컬 실행
+3. 로컬 실행 (기본 프로필)
+   - MySQL에 `medical` 데이터베이스를 만들고 계정 `medical`/`medical123!`(또는 환경 변수 `SPRING_DATASOURCE_*`)을 준비합니다.
+   - 기본 연결 정보: `jdbc:mysql://localhost:3307/medical` (필요 시 `SPRING_DATASOURCE_URL`로 오버라이드)
    ```
    ./gradlew bootRun
    ```
-   필요 시 `compose.yaml`을 참고해 데이터베이스 컨테이너를 띄웁니다.
 
-## Docker / Compose 실행
+4. **프로필**
+   ```
+   SPRING_PROFILES_ACTIVE=<프로필> ./gradlew bootRun
+   ```
+   또는 IDE Run Configuration에서 `SPRING_PROFILES_ACTIVE=<프로필>`/`--spring.profiles.active=<프로필>`을 지정합니다.
 
-1. `.env` 없이도 `compose.yaml`에 기본 환경 변수가 정의되어 있으므로 바로 실행 가능합니다.
-   ```
-   docker compose up --build
-   ```
-2. 컨테이너 구성
-    - `mysql`: `medical` 데이터베이스를 생성하고 루트/일반 계정 비밀번호는 `compose.yaml`의 `MYSQL_*` 항목으로 정의되어 있습니다.
-    - `backend`: 위 저장소의 Dockerfile로 빌드된 Spring Boot 애플리케이션. `SPRING_DATASOURCE_*`, `JWT_*` 환경 변수를 통해 DB 및 JWT 설정을 주입합니다.
-3. 포트
-    - MySQL: `3306` (호스트에 바인딩)
-    - Backend: `8080` → `http://localhost:8080/swagger-ui/index.html`에서 Swagger UI 접근
-4. 데이터 초기화
-    - 애플리케이션 기동 시 `data.sql`이 실행되어 최소 10건 이상의 한글 더미 데이터가 로드됩니다.
+   - (기본) 프로필 없음: 위 MySQL 설정을 그대로 사용합니다.
+   - `local`: 내장 H2 데이터베이스를 사용하며 `data.sql`이 자동 적재됩니다. 콘솔 주소는 `http://localhost:8080/h2-console`입니다.
+
+### 데이터 초기화
+
+- 애플리케이션 기동 시 `data.sql`이 실행되어 최소 10건 이상의 한글 더미 데이터가 로드됩니다.
 
 ## Swagger 기반 API 문서
 

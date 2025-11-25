@@ -11,9 +11,13 @@ public interface PharmacyRepository extends JpaRepository<Pharmacy, Long> {
 
     @Query("""
             select p from Pharmacy p
-            where lower(p.name) like lower(concat('%', :keyword, '%'))
-               or lower(p.address) like lower(concat('%', :keyword, '%'))
+            where p.hospital.id = :hospitalId
+              and (
+                lower(p.name) like lower(concat('%', :keyword, '%'))
+                or lower(p.address) like lower(concat('%', :keyword, '%'))
+              )
             order by p.name asc
             """)
-    List<Pharmacy> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+    List<Pharmacy> searchByKeywordAndHospital(
+            @Param("hospitalId") Long hospitalId, @Param("keyword") String keyword, Pageable pageable);
 }
